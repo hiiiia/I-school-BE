@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],     
 )
 
+session = SessionLocal()
 
 
 @app.get("/")
@@ -39,7 +40,7 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
     
 
     # code로 courseId 찾기
-    course = SessionLocal.query(Course.course_id).filter(Course.code == code).all()
+    course = session.query(Course.id).filter(Course.code == code).all()
     if not course:
         return {
             "success" : False,
@@ -48,7 +49,7 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
             }
 
 
-    timetable = SessionLocal.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
+    timetable = session.query(Timetable).filter(Timetable.id == timetableId).first()
     if not timetable:
         return {
             "success" : False,
@@ -63,9 +64,9 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
         courses.course_id = courseId[0]
 
         try :
-            SessionLocal.add(courses)
-            SessionLocal.commit()
-            SessionLocal.refresh(courses)
+            session.add(courses)
+            session.commit()
+            session.refresh(courses)
 
         except SQLAlchemyError as e:
             return {
@@ -87,7 +88,7 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
     
 
     # code로 courseId 찾기
-    course = SessionLocal.query(Course.course_id).filter(Course.code == code).all()
+    course = session.query(Course.id).filter(Course.code == code).all()
     if not course:
         return {
             "success" : False,
@@ -96,7 +97,7 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
             }
 
 
-    timetable = SessionLocal.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
+    timetable = session.query(Timetable).filter(Timetable.id == timetableId).first()
     if not timetable:
         return {
             "success" : False,
@@ -109,10 +110,10 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
 
         try :
             courseId[0]
-            SessionLocal.query(Course_Timetable).filter(and_(
+            session.query(Course_Timetable).filter(and_(
                 Course_Timetable.course_id == courseId[0],
                 Course_Timetable.timetable_id == timetableId)).delete()
-            SessionLocal.commit()
+            session.commit()
 
         except SQLAlchemyError as e:
             return {
@@ -132,14 +133,17 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
 async def getCourses(major: str, keyword: str, grade: str):
 
     try:
+
+
         # 먼저 키워드에 맞는 교수를 확인
-        course_check = SessionLocal.query(Course).filter(
+        course_check = session.query(Course).filter(
             or_(
                 Course.professor == keyword,
                 Course.name == keyword
             )
         ).all()
 
+        
         # 키워드에 맞는 교수가 없으면 오류 메시지 반환
         if not course_check:
             return {
@@ -152,8 +156,10 @@ async def getCourses(major: str, keyword: str, grade: str):
 
         # 키워드가 맞는 경우, major와 grade를 기준으로 필터링
        # Course와 CourseReview 테이블을 join하여 조건에 맞는 데이터를 가져옴
-        courses = SessionLocal.query(
-            Course.course_id,
+        
+
+        courses = session.query(
+            Course.id,
             Course.code,
             Course.name,
             Course.professor,
@@ -164,7 +170,7 @@ async def getCourses(major: str, keyword: str, grade: str):
             Course.end_time,
             Course.course_room,
             Course_Review.rating.label('review_rating')
-        ).join(Course_Review, Course.course_id == Course_Review.course_id, isouter=True).filter(
+        ).join(Course_Review, Course.id == Course_Review.course_id, isouter=True).filter(
             and_(
                 Course.major == major,
                 Course.grade == grade,
@@ -175,12 +181,11 @@ async def getCourses(major: str, keyword: str, grade: str):
             )
         ).all()
 
-        print(courses)
 
         # 데이터를 변환하여 응답 형식에 맞게 변경
         course_list = [
             {
-                "courseId": course.course_id,
+                "courseId": course.id,
                 "courseCode": course.code,
                 "courseName": course.name,
                 "professor": course.professor,
