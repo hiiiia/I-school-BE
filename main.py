@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, Body, HTTPException
 from models import *
-from database import session
+from database import SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import and_, or_
@@ -39,7 +39,7 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
     
 
     # code로 courseId 찾기
-    course = session.query(Course.course_id).filter(Course.code == code).all()
+    course = SessionLocal.query(Course.course_id).filter(Course.code == code).all()
     if not course:
         return {
             "success" : False,
@@ -48,7 +48,7 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
             }
 
 
-    timetable = session.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
+    timetable = SessionLocal.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
     if not timetable:
         return {
             "success" : False,
@@ -63,9 +63,9 @@ async def postCourseToTimetable(userId : int = Body(...,embed=True),
         courses.course_id = courseId[0]
 
         try :
-            session.add(courses)
-            session.commit()
-            session.refresh(courses)
+            SessionLocal.add(courses)
+            SessionLocal.commit()
+            SessionLocal.refresh(courses)
 
         except SQLAlchemyError as e:
             return {
@@ -87,7 +87,7 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
     
 
     # code로 courseId 찾기
-    course = session.query(Course.course_id).filter(Course.code == code).all()
+    course = SessionLocal.query(Course.course_id).filter(Course.code == code).all()
     if not course:
         return {
             "success" : False,
@@ -96,7 +96,7 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
             }
 
 
-    timetable = session.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
+    timetable = SessionLocal.query(Timetable).filter(Timetable.timetable_id == timetableId).first()
     if not timetable:
         return {
             "success" : False,
@@ -109,10 +109,10 @@ async def deleteCourseFromTimetable(userId : int = Body(...,embed=True),
 
         try :
             courseId[0]
-            session.query(Course_Timetable).filter(and_(
+            SessionLocal.query(Course_Timetable).filter(and_(
                 Course_Timetable.course_id == courseId[0],
                 Course_Timetable.timetable_id == timetableId)).delete()
-            session.commit()
+            SessionLocal.commit()
 
         except SQLAlchemyError as e:
             return {
@@ -133,7 +133,7 @@ async def getCourses(major: str, keyword: str, grade: str):
 
     try:
         # 먼저 키워드에 맞는 교수를 확인
-        course_check = session.query(Course).filter(
+        course_check = SessionLocal.query(Course).filter(
             or_(
                 Course.professor == keyword,
                 Course.name == keyword
@@ -152,7 +152,7 @@ async def getCourses(major: str, keyword: str, grade: str):
 
         # 키워드가 맞는 경우, major와 grade를 기준으로 필터링
        # Course와 CourseReview 테이블을 join하여 조건에 맞는 데이터를 가져옴
-        courses = session.query(
+        courses = SessionLocal.query(
             Course.course_id,
             Course.code,
             Course.name,
