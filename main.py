@@ -69,7 +69,7 @@ async def postCourseToTimetable(userId: int = Body(..., embed=True),
         }
 
     for courseId in course:
-        courses = Course_Timetable()
+        courses = CourseTimetable()
         courses.timetable_id = timetableId
         courses.course_id = courseId[0]
 
@@ -117,9 +117,9 @@ async def deleteCourseFromTimetable(userId: int = Body(..., embed=True),
 
         try:
             courseId[0]
-            session.query(Course_Timetable).filter(and_(
-                Course_Timetable.course_id == courseId[0],
-                Course_Timetable.timetable_id == timetableId)).delete()
+            session.query(CourseTimetable).filter(and_(
+                CourseTimetable.course_id == courseId[0],
+                CourseTimetable.timetable_id == timetableId)).delete()
             session.commit()
 
         except SQLAlchemyError as e:
