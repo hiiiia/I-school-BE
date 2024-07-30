@@ -1,0 +1,10 @@
+# .ignore 파일
+
+# .idea 폴더
+.idea/
+
+# .DS_Store
+.DS_Store
+
+# .env
+.env
